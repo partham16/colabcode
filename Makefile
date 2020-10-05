@@ -14,3 +14,7 @@ make fup_pull:
 make fup_push:
 	git checkout for_upstream
 	git push origin for_upstream
+
+make amend:
+	git add .
+	git commit --amend
