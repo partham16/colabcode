@@ -1,46 +1,64 @@
+"""base code"""
 import os
 import subprocess
+
 from pyngrok import ngrok
 
 try:
-    from google.colab import drive
-
-    colab_env = True
+    COLAB_ENV = True
+    from google.colab import drive  # type:ignore
 except ImportError:
-    colab_env = False
+    COLAB_ENV = False
 
 
-EXTENSIONS = ["ms-python.python", "jithurjacob.nbpreviewer", 
-              "njpwerner.autodocstring", "ms-python.vscode-pylance", "ms-vscode-remote.remote-wsl", "ms-python.anaconda-extension-pack",
-              "donjayamanne.githistory", "bee.git-temporal-vscode", "kiteco.kite", "vscode-icons-team.vscode-icons"] 
-              ## "julialang.language-julia"
+EXTENSIONS = [
+    "ms-python.python",
+    "jithurjacob.nbpreviewer",
+    "njpwerner.autodocstring",
+    "ms-python.vscode-pylance",
+    "ms-vscode-remote.remote-wsl",
+    "ms-python.anaconda-extension-pack",
+    "donjayamanne.githistory",
+    "bee.git-temporal-vscode",
+    "kiteco.kite",
+    "vscode-icons-team.vscode-icons",
+]
+# "julialang.language-julia"
 
 
 class ColabCode:
-    def __init__(self, port=10000, password=None, mount_drive=False, add_extensions=None):
+    """[sets up code server on an ngrok link]"""
+
+    def __init__(
+        self, port=10000, password=None, mount_drive=False, add_extensions=None
+    ):
         self.port = port
         self.password = password
         self._mount = mount_drive
         self._install_code()
-        if add_extensions is not None:
-            global EXTENSIONS
-            if type(add_extensions) == list and type(add_extensions[0]) == str:
-                EXTENSIONS += add_extensions
-            else: 
-                raise TypeError("You need to pass a list of string(s) e.g. ['ms-python.python']")
+        self.extensions = EXTENSIONS
+        if add_extensions is not None and add_extensions != []:
+            if isinstance(add_extensions, list) and isinstance(add_extensions[0], str):
+                self.extensions += add_extensions
+            else:
+                raise TypeError(
+                    "You need to pass a list of string(s) e.g. ['ms-python.python']"
+                )
         self._install_extensions()
         self._start_server()
         self._run_code()
 
     def _install_code(self):
         subprocess.run(
-            ["wget", "https://code-server.dev/install.sh"], stdout=subprocess.PIPE
+            ["wget", "https://code-server.dev/install.sh"],
+            stdout=subprocess.PIPE,
+            check=True,
         )
-        subprocess.run(["sh", "install.sh"], stdout=subprocess.PIPE)
+        subprocess.run(["sh", "install.sh"], stdout=subprocess.PIPE, check=True)
 
     def _install_extensions(self):
-        for ext in EXTENSIONS:
-            subprocess.run(["code-server", "--install-extension", f"{ext}"])
+        for ext in self.extensions:
+            subprocess.run(["code-server", "--install-extension", f"{ext}"], check=True)
 
     def _start_server(self):
         active_tunnels = ngrok.get_tunnels()
@@ -52,12 +70,15 @@ class ColabCode:
 
     def _run_code(self):
         os.system(f"fuser -n tcp -k {self.port}")
-        if self._mount and colab_env:
+        _tele = "--disable-telemetry"
+        if self._mount and COLAB_ENV:
             drive.mount("/content/drive")
         if self.password:
-            code_cmd = f"PASSWORD={self.password} code-server --port {self.port} --disable-telemetry"
+            code_cmd = (
+                f"PASSWORD={self.password} code-server --port {self.port} {_tele}"
+            )
         else:
-            code_cmd = f"code-server --port {self.port} --auth none --disable-telemetry"
+            code_cmd = f"code-server --port {self.port} --auth none {_tele}"
         with subprocess.Popen(
             [code_cmd],
             shell=True,

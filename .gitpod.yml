@@ -1,3 +1,4 @@
 tasks:
   - init: pip install -r ./requirements.txt
-    command: 'git log --oneline -n 3 && git config --global user.email $(echo $GH_PRIVATE_EMAIL) && git status && git config --global user.email'
+  - command: "git config --global user.email $GH_PRIVATE_EMAIL"
+  - command: "git log --oneline -n 3 && git status"
