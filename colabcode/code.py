@@ -57,8 +57,11 @@ class ColabCode:
         subprocess.run(["sh", "install.sh"], stdout=subprocess.PIPE, check=True)
 
     def _install_extensions(self):
+        """set check as False - otherwise non existing extension will give error"""
         for ext in self.extensions:
-            subprocess.run(["code-server", "--install-extension", f"{ext}"], check=True)
+            subprocess.run(
+                ["code-server", "--install-extension", f"{ext}"], check=False
+            )
 
     def _start_server(self):
         active_tunnels = ngrok.get_tunnels()
