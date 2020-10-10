@@ -1,6 +1,7 @@
 """base code"""
 import os
 import subprocess
+import random
 
 from pyngrok import ngrok
 
@@ -33,7 +34,7 @@ class ColabCode:
         self, port=10000, password=None, mount_drive=False, add_extensions=None
     ):
         self.port = port
-        self.password = password
+        self.password = int(random.random() * 1e4) if password is None else password
         self._mount = mount_drive
         self._install_code()
         self.extensions = EXTENSIONS
@@ -89,5 +90,6 @@ class ColabCode:
             bufsize=1,
             universal_newlines=True,
         ) as proc:
+            print(f"Use password {self.password} to login")
             for line in proc.stdout:
                 print(line, end="")
