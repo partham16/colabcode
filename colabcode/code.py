@@ -10,6 +10,7 @@ try:
 except ImportError:
     COLAB_ENV = False
 
+PIPE = subprocess.PIPE
 
 EXTENSIONS = [
     "ms-python.python",
@@ -35,6 +36,7 @@ class ColabCode:
         self.port = port
         self.password = password
         self._mount = mount_drive
+        self._settings()
         self._install_code()
         self.extensions = EXTENSIONS
         if add_extensions is not None and add_extensions != []:
@@ -48,13 +50,49 @@ class ColabCode:
         self._start_server()
         self._run_code()
 
+    def _settings(self):
+        """install ohmybash and set up settings.json file
+        https://github.com/ohmybash/oh-my-bash
+        https://github.com/cdr/code-server/issues/1680#issue-620677320
+        """
+        subprocess.run(
+            [
+                "wget",
+                "https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh",
+                "-O",
+                "install_ohmybash.sh",
+            ],
+            stdout=PIPE,
+            check=True,
+        )
+        subprocess.run(["sh", "install_ohmybash.sh"], stdout=PIPE, check=True)
+        # either `shell=False` or `cp x y` instead of list
+        subprocess.call(
+            [
+                "cp",
+                "code-server-settings.json",
+                "~/.local/share/code-server/User/settings.json",
+            ],
+            stdout=PIPE,
+            shell=False,
+        )
+        subprocess.call(
+            [
+                "cp",
+                "code-server-coder.json",
+                "~/.local/share/code-server/coder.json",
+            ],
+            stdout=PIPE,
+            shell=False,
+        )
+
     def _install_code(self):
         subprocess.run(
             ["wget", "https://code-server.dev/install.sh"],
-            stdout=subprocess.PIPE,
+            stdout=PIPE,
             check=True,
         )
-        subprocess.run(["sh", "install.sh"], stdout=subprocess.PIPE, check=True)
+        subprocess.run(["sh", "install.sh"], stdout=PIPE, check=True)
 
     def _install_extensions(self):
         """set check as False - otherwise non existing extension will give error"""
@@ -85,7 +123,7 @@ class ColabCode:
         with subprocess.Popen(
             [code_cmd],
             shell=True,
-            stdout=subprocess.PIPE,
+            stdout=PIPE,
             bufsize=1,
             universal_newlines=True,
         ) as proc:
