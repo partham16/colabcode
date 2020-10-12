@@ -31,11 +31,17 @@ class ColabCode:
     """[sets up code server on an ngrok link]"""
 
     def __init__(
-        self, port=10000, password=None, mount_drive=False, add_extensions=None
+        self,
+        port=10000,
+        password=None,
+        mount_drive=False,
+        add_extensions=None,
+        prompt="powerline-plain",
     ):
         self.port = port
         self.password = password
         self._mount = mount_drive
+        self._prompt = prompt
         self._settings()
         self._install_code()
         self.extensions = EXTENSIONS
@@ -51,7 +57,8 @@ class ColabCode:
         self._run_code()
 
     def _settings(self):
-        """install ohmybash and set up settings.json file
+        """install ohmybash and set up code_server settings.json file
+        Plus, set up powerline bash prompt
         https://github.com/ohmybash/oh-my-bash
         https://github.com/cdr/code-server/issues/1680#issue-620677320
         """
@@ -66,25 +73,33 @@ class ColabCode:
             check=True,
         )
         subprocess.run(["sh", "install_ohmybash.sh"], stdout=PIPE, check=True)
+        # set bash theme as 'powerline-plain'
+        # for undu's theme : `source ~/.powerline.bash` works
+        if self._prompt in ["powerline-plain", "powerline", "agnoster"]:
+            subprocess.run(
+                ["sh", "./code_server/sed.sh"],
+                stdout=PIPE,
+                check=True,
+            )
+        elif self._prompt == "powerline-undu":
+            subprocess.run(
+                ["~/.bashrc", "<<", "source ~/.powerline.bash"], stdout=PIPE, check=True
+            )
         # either `shell=False` or `cp x y` instead of list
-        subprocess.call(
-            [
-                "cp",
-                "code-server-settings.json",
-                "~/.local/share/code-server/User/settings.json",
-            ],
-            stdout=PIPE,
-            shell=False,
-        )
-        subprocess.call(
-            [
-                "cp",
-                "code-server-coder.json",
-                "~/.local/share/code-server/coder.json",
-            ],
-            stdout=PIPE,
-            shell=False,
-        )
+        for src, dest in {
+            "settings.json": "~/.local/share/code-server/User/settings.json",
+            "coder.json": "~/.local/share/code-server/coder.json",
+            ".undu-powerline.bash": "~/.powerline.bash",
+        }.items():
+            subprocess.call(
+                [
+                    "cp",
+                    f"./code_server/{src}",
+                    dest,
+                ],
+                stdout=PIPE,
+                shell=False,
+            )
 
     def _install_code(self):
         subprocess.run(
