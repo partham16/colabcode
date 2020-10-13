@@ -41,6 +41,7 @@
         "redhat.vscode-yaml"
     ],
     "workbench.iconTheme": "vscode-icons",
+    "explorer.autoReveal": "focusNoScroll",
     "extensions": [
         "ms-vsonline.vsonline",
         "GitHub.vscode-pull-request-github",

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# bash strict mode
-set -eu
+# bash strict mode  ## ERROR
+# set -eu
 
 if [ -z $1 ]; then
   theme="powerline-plain"

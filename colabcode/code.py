@@ -86,20 +86,24 @@ class ColabCode:
                 ["~/.bashrc", "<<", "source ~/.powerline.bash"], stdout=PIPE, check=True
             )
         # either `shell=False` or `cp x y` instead of list
+        # https://stackoverflow.com/a/17880895/13070032
         for src, dest in {
             "settings.json": "~/.local/share/code-server/User/settings.json",
             "coder.json": "~/.local/share/code-server/coder.json",
             ".undu-powerline.bash": "~/.powerline.bash",
         }.items():
             subprocess.call(
-                [
-                    "cp",
-                    f"./code_server/{src}",
-                    dest,
-                ],
+                f"cp ./code_server/{src} {dest}",
                 stdout=PIPE,
-                shell=False,
+                shell=True,
             )
+
+        # to enable `python -m venv envname`
+        # subprocess.call(
+        #     "apt-get update && apt-get install python3-venv",
+        #     stdout=PIPE,
+        #     shell=True,
+        # )
 
     def _install_code(self):
         subprocess.run(
