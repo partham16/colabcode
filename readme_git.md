@@ -36,7 +36,7 @@ You only need to use the `-f` the first time after you've rebased.
 
 ### [Github `branch` and `pull request`](https://www.gun.io/blog/how-to-github-fork-branch-and-pull-request)
 - track upstream : `git remote add --track master upstream git://github.com/upstreamname/projectname.git`
-- then fetch, rebase, and push : 
+- then fetch, rebase, and push :
     ```bash
     git fetch upstream
     git checkout master
@@ -44,5 +44,5 @@ You only need to use the `-f` the first time after you've rebased.
     git push origin master
     ```
 - add `pull request` from a new branch : `git checkout -b newfeature`
-    
+
     > So, `master` remains clean (even if pull request is **rejected**)

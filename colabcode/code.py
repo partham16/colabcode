@@ -10,6 +10,7 @@ try:
 except ImportError:
     COLAB_ENV = False
 
+PIPE = subprocess.PIPE
 
 EXTENSIONS = [
     "ms-python.python",
@@ -30,12 +31,19 @@ class ColabCode:
     """[sets up code server on an ngrok link]"""
 
     def __init__(
-        self, port=10000, password=None, mount_drive=False, add_extensions=None
+        self,
+        port=10000,
+        password=None,
+        mount_drive=False,
+        add_extensions=None,
+        prompt="powerline-plain",
+        get_zsh=False,
     ):
         self.port = port
         self.password = password
         self._mount = mount_drive
-        self._install_code()
+        self._prompt = prompt
+        self._zsh = get_zsh
         self.extensions = EXTENSIONS
         if add_extensions is not None and add_extensions != []:
             if isinstance(add_extensions, list) and isinstance(add_extensions[0], str):
@@ -44,17 +52,77 @@ class ColabCode:
                 raise TypeError(
                     "You need to pass a list of string(s) e.g. ['ms-python.python']"
                 )
+        self._install_code()
         self._install_extensions()
+        # install code-server, then extensions
+        # creates the User folder, then transfer settings
+        self._settings()
         self._start_server()
         self._run_code()
+
+    def _settings(self):
+        """install ohmybash and set up code_server settings.json file
+        Plus, set up powerline bash prompt
+        https://github.com/ohmybash/oh-my-bash
+        https://github.com/cdr/code-server/issues/1680#issue-620677320
+        """
+        subprocess.run(
+            [
+                "wget",
+                "https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh",
+                "-O",
+                "install_ohmybash.sh",
+            ],
+            stdout=PIPE,
+            check=True,
+        )
+        subprocess.run(["sh", "install_ohmybash.sh"], stdout=PIPE, check=True)
+
+        if self._zsh:
+            subprocess.run(["sh", "./code_server/get_zsh.sh"], stdout=PIPE, check=True)
+
+        # set bash theme as 'powerline-plain'
+        # for undu's theme : `source ~/.powerline.bash` works
+        if self._prompt in [
+            "powerline-plain",
+            "powerline",
+            "agnoster",
+            "powerline-undu",
+        ]:
+            subprocess.run(
+                ["sh", "./code_server/sed.sh", f"{self._prompt}"],
+                stdout=PIPE,
+                check=True,
+            )
+
+        # either `shell=False` or `cp x y` instead of list
+        # https://stackoverflow.com/a/17880895/13070032
+        for src, dest in {
+            "settings.json": "~/.local/share/code-server/User/settings.json",
+            "coder.json": "~/.local/share/code-server/coder.json",
+            ".undu-powerline.bash": "~/.powerline.bash",
+        }.items():
+            subprocess.call(
+                f"cp ./code_server/{src} {dest}",
+                stdout=PIPE,
+                shell=True,
+            )
+
+        # to enable `python -m venv envname`
+        # also add nano [vim, tmux (default py2!), ... if needed]
+        subprocess.call(
+            "apt-get update && apt-get install python3-venv nano",
+            stdout=PIPE,
+            shell=True,
+        )
 
     def _install_code(self):
         subprocess.run(
             ["wget", "https://code-server.dev/install.sh"],
-            stdout=subprocess.PIPE,
+            stdout=PIPE,
             check=True,
         )
-        subprocess.run(["sh", "install.sh"], stdout=subprocess.PIPE, check=True)
+        subprocess.run(["sh", "install.sh"], stdout=PIPE, check=True)
 
     def _install_extensions(self):
         """set check as False - otherwise non existing extension will give error"""
@@ -85,7 +153,7 @@ class ColabCode:
         with subprocess.Popen(
             [code_cmd],
             shell=True,
-            stdout=subprocess.PIPE,
+            stdout=PIPE,
             bufsize=1,
             universal_newlines=True,
         ) as proc:
