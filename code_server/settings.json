@@ -54,5 +54,8 @@
         "donjayamanne.githistory",
         "vscode-icons-team.vscode-icons",
         "redhat.vscode-yaml"
-    ]
+    ],
+    "terminal.integrated.shell.linux": "/bin/bash"
+    //"terminal.integrated.fontFamily": "Source Code Pro for Powerline",
+    //"terminal.integrated.rendererType": "canvas"
 }

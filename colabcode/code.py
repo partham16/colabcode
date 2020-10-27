@@ -37,13 +37,13 @@ class ColabCode:
         mount_drive=False,
         add_extensions=None,
         prompt="powerline-plain",
+        get_zsh=False,
     ):
         self.port = port
         self.password = password
         self._mount = mount_drive
         self._prompt = prompt
-        self._settings()
-        self._install_code()
+        self._zsh = get_zsh
         self.extensions = EXTENSIONS
         if add_extensions is not None and add_extensions != []:
             if isinstance(add_extensions, list) and isinstance(add_extensions[0], str):
@@ -52,7 +52,11 @@ class ColabCode:
                 raise TypeError(
                     "You need to pass a list of string(s) e.g. ['ms-python.python']"
                 )
+        self._install_code()
         self._install_extensions()
+        # install code-server, then extensions
+        # creates the User folder, then transfer settings
+        self._settings()
         self._start_server()
         self._run_code()
 
@@ -73,18 +77,24 @@ class ColabCode:
             check=True,
         )
         subprocess.run(["sh", "install_ohmybash.sh"], stdout=PIPE, check=True)
+
+        if self._zsh:
+            subprocess.run(["sh", "./code_server/get_zsh.sh"], stdout=PIPE, check=True)
+
         # set bash theme as 'powerline-plain'
         # for undu's theme : `source ~/.powerline.bash` works
-        if self._prompt in ["powerline-plain", "powerline", "agnoster"]:
+        if self._prompt in [
+            "powerline-plain",
+            "powerline",
+            "agnoster",
+            "powerline-undu",
+        ]:
             subprocess.run(
-                ["sh", "./code_server/sed.sh"],
+                ["sh", "./code_server/sed.sh", f"{self._prompt}"],
                 stdout=PIPE,
                 check=True,
             )
-        elif self._prompt == "powerline-undu":
-            subprocess.run(
-                ["~/.bashrc", "<<", "source ~/.powerline.bash"], stdout=PIPE, check=True
-            )
+
         # either `shell=False` or `cp x y` instead of list
         # https://stackoverflow.com/a/17880895/13070032
         for src, dest in {
@@ -99,11 +109,12 @@ class ColabCode:
             )
 
         # to enable `python -m venv envname`
-        # subprocess.call(
-        #     "apt-get update && apt-get install python3-venv",
-        #     stdout=PIPE,
-        #     shell=True,
-        # )
+        # also add nano [vim, tmux (default py2!), ... if needed]
+        subprocess.call(
+            "apt-get update && apt-get install python3-venv nano",
+            stdout=PIPE,
+            shell=True,
+        )
 
     def _install_code(self):
         subprocess.run(
